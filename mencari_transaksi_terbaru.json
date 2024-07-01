@@ -1,0 +1,36 @@
+db.accounts.aggregate([
+  {
+    $lookup: {
+      from: "transactions",
+      let: { account_id: "$_id" },
+      pipeline: [
+        {
+          $unwind: "$transactions"
+        },
+        {
+          $group: {
+            _id: "$account_id",
+            latestTransaction: { $max: "$transactions.date" }
+          }
+        }
+      ],
+      as: "latestTransactionData"
+    }
+  },
+  {
+    $unwind: {
+      path: "$latestTransactionData",
+      preserveNullAndEmptyArrays: true
+    }
+  },
+  {
+    $addFields: {
+      latestTransaction: "$latestTransactionData.latestTransaction"
+    }
+  },
+  {
+    $project: {
+      latestTransactionData: 0
+    }
+  }
+]);
